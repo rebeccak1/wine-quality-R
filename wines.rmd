@@ -1,0 +1,232 @@
+White Wine Exploratory Analysis by Rebecca
+========================================================
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+library(ggplot2)
+library(corrplot)
+library(reshape2)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+wine = read.csv("../Downloads/wineQualityWhites.csv")
+wine=subset(wine,select=-X)
+```
+
+This dataset contains information about Portuguese white variants of
+“Vinho Verde” wine. It includes 4898 observations of 12 features. 11 of the features are chemical variables (independent variables), and the other feature is wine quality (dependent variable), a subjective measure that is the median of the opinions of three wine experts. Specifically, the features are:
+
+- fixed acidity: most acids involved with wine or fixed or nonvolatile (do not evaporate readily)
+
+- volatile acidity: the amount of acetic acid in wine, which at too high of levels can lead to an unpleasant, vinegar taste
+
+- citric acid: found in small quantities, citric acid can add ‘freshness’ and flavor to wines
+
+- residual sugar: the amount of sugar remaining after fermentation stops, it’s rare to find wines with less than 1 gram/liter and wines with greater than 45 grams/liter are considered sweet
+
+- chlorides: the amount of salt in the wine
+
+- free sulfur dioxide: the free form of SO2 exists in equilibrium between molecular SO2 (as a dissolved gas) and bisulfite ion; it prevents microbial growth and the oxidation of wine
+
+- total sulfur dioxide: amount of free and bound forms of S02; in low concentrations, SO2 is mostly undetectable in wine, but at free SO2 concentrations over 50 ppm, SO2 becomes evident in the nose and taste of wine
+
+- density: the density of water is close to that of water depending on the percent alcohol and sugar content
+
+- pH: describes how acidic or basic a wine is on a scale from 0 (very acidic) to 14 (very basic); most wines are between 3-4 on the pH scale
+
+- sulphates: a wine additive which can contribute to sulfur dioxide gas (S02) levels, wich acts as an antimicrobial and antioxidant
+
+- alcohol: the percent alcohol content of the wine
+
+- quality: discrete score between 0 (worst) and 10 (best).
+
+(These descriptions have been taken from reference 1.)
+
+```{r echo=FALSE, summary}
+summary(wine)
+```
+
+# Univariate Plots Section
+
+
+```{r echo=FALSE, Univariate_Plots}
+d <- melt(wine[,-c(1:2)])
+ggplot(d,aes(x = value)) + 
+    facet_wrap(~variable,scales = "free_x") + scale_fill_gradient(low="blue", high="red") +
+    geom_histogram(aes(fill = ..count..))
+```
+
+The above histograms show that most of the wines in the dataset are good, with a quality between 5 and 7. All of the features are normally distributed, with the exception of volatile acidity, which is slightly right skewed, and residual sugar, which is highly right skewed.
+
+```{r echo=FALSE, Univariate_Plots2}
+ggplot(data = wine, aes(x=wine$residual.sugar)) +scale_fill_gradient(low="blue", high="red") +geom_histogram(aes(fill = ..count..)) +
+scale_x_log10()
+```
+
+The above histogram shows that a log transform of residual sugar results in a bimodal distribution, with peaks around 2 and 8.
+
+```{r include=FALSE}
+wine$residual.sugar = log(wine$residual.sugar)
+```
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+The dataset contains 4898 observations of 12 features. All of the features are numeric, and quality is a discrete variable that takes on the integers from 0 to 10.
+
+### What is/are the main feature(s) of interest in your dataset?
+
+The main feature of interest is quality, as that is the feature that can be predicted from the others.
+
+### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
+
+I think that residual sugar, volatile acidity, and alcohol will help support my investigation into my feature of interest, as these features have skewed distributions.
+
+### Did you create any new variables from existing variables in the dataset?
+
+No.
+
+### Of the features you investigated, were there any unusual distributions?  Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
+
+I log-transformed the feature residual sugar since it was a feature that was highly right skewed.
+
+# Bivariate Plots Section
+
+```{r echo=FALSE, Bivariate_Plots}
+M <- cor(wine)
+col4 <- colorRampPalette(c("#7F0000","red","#FF7F00","yellow","#7FFF7F", 
+            "cyan", "#007FFF", "blue","#00007F"))   
+corrplot(M,method="ellipse",col=col4(10),type="lower",order ="hclust")
+```
+
+The correlation plot shows that strong correlations exist between sulfur dioxide and free sulfur dioxide, alcohol and density, density and residual sugar, and alcohol and quality.
+
+```{r echo=FALSE, Bivariate_Plots2}
+ggplot(wine, aes(factor(quality), density)) +
+geom_violin(aes(fill=factor(quality)))
+```
+
+The above violin plot shows that in general, better wines have lower densities, with a few outliers that have a quality of 6.
+
+```{r echo=FALSE, Bivariate_Plots3}
+ggplot(wine, aes(factor(quality), alcohol)) +
+geom_violin(aes(fill=factor(quality))) +
+geom_boxplot(width=.1)
+```
+
+The above violin plot shows that in general, better wines have higher alcohol content.
+
+```{r echo=FALSE, Bivariate_Plots4}
+ggplot(data= wine, aes(x = wine$residual.sugar, y = wine$density)) + 
+  geom_point(alpha=0.1)
+```
+
+The above scatter plot shows that there is a positive relationship between density and residual sugar.
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+
+From the correlation plot, we see that free sulfur dioxide and total sulfur dioxide are positively correlated with each other, which makes sense since free sulfur dioxide is a component of total sulfur dioxide.
+
+From the correlation plot and the violin plots, we see that alcohol and density are negatively correlated. Additionally, we see that residual sugar and density are positively correlated. The correlation plot shows that volatile acidity doesn’t have any strong correlations between any of the other features.
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+Free sulfur dioxide has a moderate negative correlation with pH.
+
+### What was the strongest relationship you found?
+
+The strongest positive relationship that I found was between density and residual sugar. The strongest negative relationship was between alcohol and density.
+
+# Multivariate Plots Section
+
+
+```{r echo=FALSE, Multivariate_Plots}
+ggplot(data= wine, aes(x = wine$alcohol, y = wine$pH, color = quality)) + 
+geom_point() + scale_colour_gradientn(colours = rainbow(5))
+```
+
+```{r echo=FALSE, Multivariate_Plots1}
+ggplot(data= wine, aes(x = wine$density, y = wine$alcohol, color = quality)) + 
+geom_point() +scale_colour_gradientn(colours = rainbow(5))
+```
+
+```{r echo=FALSE, Multivariate_Plots2}
+ggplot(data= wine, aes(x = wine$residual.sugar, y = wine$density, color = quality)) + 
+geom_point() +
+scale_colour_gradientn(colours = rainbow(5))
+```
+
+The scatter plot between pH and alcohol shows a basically flat distribution, with better wines having higher alcohol contents, and a spread in pH.
+
+The scatter plot between density and alcohol shows a negative relationship between density and alcohol. Better wines have lower densities and higher alcohol content. There is one outlier (probably the same one as below).
+
+The scatter plot between density and sugar shows a positive relationship between these two features. There is one outlier that has a density of about 1.04, and residual sugar of about 65. As we saw before, better rated wines have lower densities and higher sugar.
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+
+The strongest relationships are between quality and alcohol and density. Additionally, sugar has a strong relationship with density.
+
+### Were there any interesting or surprising interactions between features?
+
+I found it interesting that sugar and density are positively correlated, since I would not expect that these two features were related.
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+ggplot(wine, aes(factor(quality), alcohol)) +
+geom_violin(aes(fill=factor(quality))) +
+  geom_boxplot(width=.1) +
+labs(title="Alcohol vs Quality")+
+xlab("Quality")+ ylab("Alcohol (% by Volume)")
+```
+
+### Description One
+
+This violin and boxplot shows the strongest relationship between two variables in the dataset: the relationship between alcohol and quality. It is interesting that the experts gave higher scores to wines with more alcohol per volume.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+ggplot(data= wine, aes(x = residual.sugar, y = density, color = wine$quality)) +
+geom_point() + scale_colour_gradientn(colours = rainbow(5)) +
+labs(title="Density vs Residual Sugar") +
+xlab("Residual Sugar (g/dm^3)") + 
+ylab("Density (g/dm^3)")
+```
+
+### Description Two
+
+This scatter plot shows that sugar and density are positively correlated. Additionally, for the same sweetness, wine with more alcohol has lower density.
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+ggplot(data=wine, aes(x = quality)) + scale_fill_gradient(low="blue", high="red") +
+ geom_histogram(aes(fill = ..count..)) +
+xlab("Wine Quality") +
+ylab("Count") +
+labs(title="Histogram of Wine Quality")
+```
+
+### Description Three
+
+Most of the wines in the dataset have a quality of 6. Furthermore, the quality is normally distributed, with most of wines having a rating between 5 and 7.
+
+------
+
+# Reflection
+
+From this exploratory analysis, we see that good wine tends to have more alcohol and lower density. Since density increases with an increase of sugar, sugar might be bad for the flavor of wine, while alcohol is good for the flavor of wine. This analysis is based on correlation, so it does not imply any causation between the variables.
+
+Limitaions of the analysis are that the dataset is for wines from a particular region, so the relationship between the variables might not hold for different types of wine. Additionally, the quality for the wines might be judged differently by different experts. To study the data further, we could look at doing a controlled experiment, or using machine learning to create predictive models based on this dataset.
+
+References: https://s3.amazonaws.com/udacity-hosted-downloads/ud651/wineQualityInfo.txt
